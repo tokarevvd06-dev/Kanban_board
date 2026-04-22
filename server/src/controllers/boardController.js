@@ -67,11 +67,11 @@ exports.getMyBoards = async (req, res) => {
 ========================= */
 exports.getBoard = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { boardId } = req.params;
 
     const result = await pool.query(
       `SELECT * FROM boards WHERE id = $1`,
-      [id]
+      [boardId]
     );
 
     if (!result.rows.length) {

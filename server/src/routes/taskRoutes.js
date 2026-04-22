@@ -1,16 +1,11 @@
 const router = require('express').Router();
 const auth = require('../middleware/authMiddleware');
 const controller = require('../controllers/taskController');
-console.log(controller);
-/* CREATE TASK */
-router.post('/', auth, controller.createTask);
+const { checkColumnAccess, checkTaskAccess } = require('../middleware/accessMiddleware');
 
-/* GET TASKS */
-router.get('/:columnId', auth, controller.getTasksByColumn);
-/* REORDER TASKS */
-router.patch('/reorder', auth, controller.reorderTasks);
-
-/* MOVE TASK BETWEEN COLUMNS */
-router.patch('/move', auth, controller.moveTask);
+router.post('/', auth, checkColumnAccess, controller.createTask);
+router.get('/:columnId', auth, checkColumnAccess, controller.getTasksByColumn);
+router.patch('/reorder', auth, checkColumnAccess, controller.reorderTasks);
+router.patch('/move', auth, checkTaskAccess, controller.moveTask);
 
 module.exports = router;
