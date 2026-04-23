@@ -49,6 +49,7 @@ exports.reorderColumns = async (req, res) => {
 
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE columns IN EXCLUSIVE MODE');
 
     for (const col of columns) {
       await client.query(

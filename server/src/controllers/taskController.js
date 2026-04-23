@@ -32,7 +32,7 @@ exports.moveTask = async (req, res) => {
       const { taskId, fromColumnId, toColumnId, newPosition } = req.body;
   
       await client.query('BEGIN');
-  
+      await client.query('LOCK TABLE tasks IN EXCLUSIVE MODE');
       // 1. получаем старую позицию задачи
       const taskRes = await client.query(
         `SELECT position FROM tasks WHERE id = $1`,

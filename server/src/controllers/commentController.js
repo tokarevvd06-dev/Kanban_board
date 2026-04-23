@@ -8,7 +8,7 @@ exports.createComment = async (req, res) => {
     const userId = req.user.id;
 
     const result = await pool.query(
-      `INSERT INTO comments (task_id, user_id, content)
+      `INSERT INTO comments (task_id, author_id, content)
        VALUES ($1, $2, $3)
        RETURNING *`,
       [taskId, userId, content]
@@ -28,7 +28,7 @@ exports.getTaskComments = async (req, res) => {
     const result = await pool.query(
       `SELECT c.*, u.email
        FROM comments c
-       JOIN users u ON u.id = c.user_id
+       JOIN users u ON u.id = c.author_id
        WHERE c.task_id = $1
        ORDER BY c.created_at ASC`,
       [taskId]
@@ -48,7 +48,7 @@ exports.deleteComment = async (req, res) => {
 
     const result = await pool.query(
       `DELETE FROM comments
-       WHERE id = $1 AND user_id = $2
+       WHERE id = $1 AND author_id = $2
        RETURNING *`,
       [commentId, userId]
     );
@@ -58,6 +58,33 @@ exports.deleteComment = async (req, res) => {
     }
 
     res.json({ message: 'Комментарий удалён' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
+// ✏️ Обновить комментарий (только автор)
+exports.updateComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `UPDATE comments
+       SET content = $1
+       WHERE id = $2 AND author_id = $3
+       RETURNING *`,
+      [content, commentId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({ error: 'Нет доступа к комментарию' });
+    }
+
+    res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

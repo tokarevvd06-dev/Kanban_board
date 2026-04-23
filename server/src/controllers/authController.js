@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 
-const JWT_SECRET = 'supersecretkey'; // потом перенесём в .env
+const JWT_SECRET = process.env.JWT_SECRET; // потом перенесём в .env
 
 // REGISTER
 async function register(req, res) {

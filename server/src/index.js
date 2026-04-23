@@ -51,20 +51,22 @@ app.use('/api/members', require('./routes/memberRoutes'));
 /* =========================
    404 HANDLER
 ========================= */
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    path: req.originalUrl,
-  });
-});
-
-/* =========================
-   ERROR HANDLER (опционально, но полезно)
-========================= */
-app.use((err, req, res, next) => {
-  console.error('🔥 SERVER ERROR:', err.message);
-  res.status(500).json({ error: 'Internal server error' });
-});
+// 404
+app.use((req, res, next) => {
+   const error = new Error(`Route not found: ${req.originalUrl}`);
+   error.status = 404;
+   next(error);
+ });
+ 
+ // GLOBAL ERROR HANDLER
+ app.use((err, req, res, next) => {
+   console.error('🔥 ERROR:', err);
+ 
+   res.status(err.status || 500).json({
+     success: false,
+     message: err.message || 'Server error',
+   });
+ });
 
 /* =========================
    START SERVER
