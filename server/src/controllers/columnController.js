@@ -1,14 +1,37 @@
 const pool = require('../db');
+const asyncHandler = require('../middleware/asyncHandler');
 
-exports.createColumn = async (req, res) => {
+exports.createColumn = asyncHandler(async (req, res) => {
   const { boardId, title } = req.body;
 
-  try {
-    const positionResult = await pool.query(
-      `SELECT COALESCE(MAX(position), 0) + 1 AS next_position
-       FROM columns WHERE board_id = $1`,
-      [boardId]
-    );
+  const boardCheck = await pool.query(
+    `SELECT id FROM boards WHERE id = $1`,
+    [boardId]
+  );
+  
+  if (!boardCheck.rows.length) {
+    const err = new Error('Board not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const accessCheck = await pool.query(
+    `SELECT 1 FROM board_members
+     WHERE board_id = $1 AND user_id = $2`,
+    [boardId, req.user.id]
+  );
+  
+  if (!accessCheck.rows.length) {
+    const err = new Error('Access denied to this board');
+    err.status = 403;
+    throw err;
+  }
+
+  const positionResult = await pool.query(
+    `SELECT COALESCE(MAX(position), 0) + 1 AS next_position
+     FROM columns WHERE board_id = $1`,
+    [boardId]
+  );
 
     const position = positionResult.rows[0].next_position;
 
@@ -19,28 +42,21 @@ exports.createColumn = async (req, res) => {
       [boardId, title, position]
     );
 
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+    res.json({ success: true, data: result.rows[0] });
+  });
 
-exports.getColumnsByBoard = async (req, res) => {
+exports.getColumnsByBoard = asyncHandler(async (req, res) => {
   const { boardId } = req.params;
 
-  try {
-    const result = await pool.query(
-      `SELECT * FROM columns
-       WHERE board_id = $1
-       ORDER BY position`,
-      [boardId]
-    );
+  const result = await pool.query(
+    `SELECT * FROM columns
+     WHERE board_id = $1
+     ORDER BY position`,
+    [boardId]
+  );
 
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+  res.json({ success: true, data: result.rows });
+});
 
 exports.reorderColumns = async (req, res) => {
   const { columns } = req.body;
@@ -61,8 +77,8 @@ exports.reorderColumns = async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ message: 'Columns reordered' });
-  } catch (err) {
+    res.json({ success: true, data: 'Columns reordered' });
+    } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });
   } finally {

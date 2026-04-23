@@ -15,8 +15,10 @@ app.use(express.json());
    TEST ROUTE
 ========================= */
 app.get('/test', (req, res) => {
-  res.json({ message: 'API is working 🚀' });
-});
+   res.json({
+      success: true,
+      data: 'API is working 🚀'
+    });});
 
 /* =========================
    AUTH ROUTES
@@ -60,7 +62,6 @@ app.use((req, res, next) => {
  
  // GLOBAL ERROR HANDLER
  app.use((err, req, res, next) => {
-   console.error('🔥 ERROR:', err);
  
    res.status(err.status || 500).json({
      success: false,

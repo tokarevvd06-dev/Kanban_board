@@ -1,29 +1,37 @@
 const pool = require('../db');
+const asyncHandler = require('../middleware/asyncHandler');
 
-exports.createTask = async (req, res) => {
+exports.createTask = asyncHandler(async (req, res) => {
   const { columnId, title, description } = req.body;
 
-  try {
-    const positionResult = await pool.query(
-      `SELECT COALESCE(MAX(position), 0) + 1 AS next_position
-       FROM tasks WHERE column_id = $1`,
-      [columnId]
-    );
-
-    const position = positionResult.rows[0].next_position;
-
-    const result = await pool.query(
-      `INSERT INTO tasks (column_id, title, description, position)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [columnId, title, description, position]
-    );
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  const columnCheck = await pool.query(
+    `SELECT id FROM columns WHERE id = $1`,
+    [columnId]
+  );
+  
+  if (!columnCheck.rows.length) {
+    const err = new Error('Column not found');
+    err.status = 404;
+    throw err;
   }
-};
+
+  const positionResult = await pool.query(
+    `SELECT COALESCE(MAX(position), 0) + 1 AS next_position
+     FROM tasks WHERE column_id = $1`,
+    [columnId]
+  );
+
+  const position = positionResult.rows[0].next_position;
+
+  const result = await pool.query(
+    `INSERT INTO tasks (column_id, title, description, position)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [columnId, title, description, position]
+  );
+
+  res.json({ success: true, data: result.rows[0] });
+});
 
 exports.moveTask = async (req, res) => {
     const client = await pool.connect();
@@ -41,6 +49,33 @@ exports.moveTask = async (req, res) => {
   
       const oldPosition = taskRes.rows[0].position;
   
+      if (fromColumnId === toColumnId) {
+        if (newPosition === oldPosition) {
+          return res.json({ success: true, data: 'No changes' });
+        }
+      
+        // сдвиг внутри одной колонки
+        await client.query(
+          `UPDATE tasks
+           SET position = position + CASE
+             WHEN $1 < $2 THEN -1
+             ELSE 1
+           END
+           WHERE column_id = $3
+             AND position BETWEEN LEAST($1, $2) AND GREATEST($1, $2)
+             AND id != $4`,
+          [oldPosition, newPosition, fromColumnId, taskId]
+        );
+      
+        await client.query(
+          `UPDATE tasks SET position = $1 WHERE id = $2`,
+          [newPosition, taskId]
+        );
+      
+        await client.query('COMMIT');
+        return res.json({ success: true, data: 'Task moved inside column' });
+      }
+      
       /* =========================
          STEP 1: FIX OLD COLUMN
       ========================= */
@@ -77,7 +112,7 @@ exports.moveTask = async (req, res) => {
   
       await client.query('COMMIT');
   
-      res.json({ ok: true });
+      res.json({ success: true, data: 'Task moved' });
   
     } catch (err) {
       await client.query('ROLLBACK');
@@ -89,22 +124,18 @@ exports.moveTask = async (req, res) => {
     }
   };
 
-exports.getTasksByColumn = async (req, res) => {
+exports.getTasksByColumn = asyncHandler(async (req, res) => {
   const { columnId } = req.params;
 
-  try {
-    const result = await pool.query(
-      `SELECT * FROM tasks
-       WHERE column_id = $1
-       ORDER BY position`,
-      [columnId]
-    );
+  const result = await pool.query(
+    `SELECT * FROM tasks
+     WHERE column_id = $1
+     ORDER BY position`,
+    [columnId]
+  );
 
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+  res.json({ success: true, data: result.rows });
+});
 
 exports.reorderTasks = async (req, res) => {
   const { tasks } = req.body;
@@ -113,6 +144,7 @@ exports.reorderTasks = async (req, res) => {
 
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE tasks IN EXCLUSIVE MODE');
 
     for (const task of tasks) {
       await client.query(
@@ -124,7 +156,7 @@ exports.reorderTasks = async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ message: 'Tasks reordered' });
+    res.json({ success: true, data: 'Tasks reordered' });
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });

@@ -2,12 +2,13 @@ const router = require('express').Router();
 const auth = require('../middleware/authMiddleware');
 const controller = require('../controllers/boardController');
 const { checkBoardAccess } = require('../middleware/accessMiddleware');
+const { requireFields } = require('../middleware/validate')
 /* =========================
    BOARDS
 ========================= */
 
 // создать доску
-router.post('/', auth, controller.createBoard);
+router.post('/', auth, requireFields('title'), controller.createBoard);
 
 // получить мои доски
 router.get('/my', auth, controller.getMyBoards);
