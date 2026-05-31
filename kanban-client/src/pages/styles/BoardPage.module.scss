@@ -1,0 +1,45 @@
+@use '../../styles/variables' as v;
+
+.page {
+  min-height: 100vh;
+  padding: 2rem 2.5rem;
+  color: v.$text;
+  background: v.$bg;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: v.$text;
+  text-decoration: none;
+  transition: color 0.2s;
+
+  &:hover {
+    color: v.$accent;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: v.$text-h;
+}
+
+.workspace {
+  overflow: hidden;
+}
+
+.status {
+  color: v.$text;
+}
+
+.error {
+  color: #f87171;
+  margin-bottom: 1rem;
+}

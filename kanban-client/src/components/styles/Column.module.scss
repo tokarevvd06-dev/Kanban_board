@@ -1,0 +1,134 @@
+@use '../../styles/variables' as v;
+
+.column {
+  flex-shrink: 0;
+  width: 17rem;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 10rem);
+  border-radius: 0.75rem;
+  background: v.$code-bg;
+  border: 1px solid v.$border;
+
+  &.dragging {
+    opacity: 0.4;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  cursor: grab;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: v.$text-h;
+}
+
+.count {
+  font-size: 0.75rem;
+  color: v.$text;
+  background: v.$social-bg;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+}
+
+.tasks {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  overflow-y: auto;
+  min-height: 3rem;
+
+  &.dropTarget {
+    background: v.$accent-bg;
+    border-radius: 0.5rem;
+    outline: 1px dashed v.$accent-border;
+    outline-offset: -4px;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.input {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid v.$border;
+  border-radius: 0.5rem;
+  background: v.$bg;
+  color: v.$text-h;
+  font-size: 0.875rem;
+  outline: none;
+
+  &:focus {
+    border-color: v.$accent-border;
+  }
+}
+
+.formActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.addBtn {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: v.$accent;
+  color: #fff;
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.cancelBtn {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid v.$border;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: v.$text;
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  &:hover {
+    color: v.$text-h;
+  }
+}
+
+.addTaskBtn {
+  margin: 0.5rem 0.75rem 0.75rem;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: v.$text;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: v.$social-bg;
+    color: v.$text-h;
+  }
+}

@@ -10,10 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dnd-kit/react": "^0.4.0",
+    "@tailwindcss/vite": "^4.2.4",
     "axios": "^1.15.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",
+    "sass": "^1.99.0",
+    "tailwindcss": "^4.2.4",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
@@ -25,6 +29,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
+    "prettier": "^3.8.3",
     "vite": "^8.0.10"
   }
 }

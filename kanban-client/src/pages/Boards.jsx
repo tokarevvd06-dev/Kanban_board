@@ -1,26 +1,91 @@
-import { useNavigate } from "react-router-dom";
-import api from "../api/api";
-
-
+import { useNavigate } from 'react-router-dom';
+import api from '../api/api';
+import { useState, useEffect } from 'react';
+import BoardCards from '../components/boardCards';
+import { useAuthStore } from '../store/authStore';
+import styles from './styles/Boards.module.scss';
 export default function Boards() {
+  const logout = useAuthStore((s) => s.logout);
 
-    const navigate = useNavigate();
+  const [boards, setBoards] = useState([]);
+  const [loading, setLoad] = useState(true);
+  const [showCreateBoard, setShowCreateBoard] = useState(false);
+  const [title, setTitle] = useState('New Kanban Board');
 
-    const getFullBoard = async () => {
-        const resp = await api.get('/boards/21b3df1e-757b-4bda-8a47-785fc9aca22a/full')
-        console.log(resp)
-    }
+  const navigate = useNavigate();
 
-    const signOut = () => {
-        navigate('/register')
-    }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const resp = await api.get('/boards/my');
+        setBoards(resp.data.data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        console.log('operation completed');
+        setLoad(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-    return (
-      <div>
-        <h1>Boards</h1>
-        
-        <button onClick={signOut}>Sign out</button>
-        <button onClick={getFullBoard}>Get full board</button>
-      </div>
-    );
+  const getFullBoard = async (id) => {
+    // const resp = await api.get(`boards/${id}/full`);
+    navigate(`/board-page/${id}`);
+    // console.log(resp);
+  };
+
+  const createBoard = async (title) => {
+    const resp = await api.post('/boards', { title: title });
+    console.log(resp);
+  };
+
+  const signOut = async () => {
+    await logout();
+    navigate('/');
+  };
+
+  if (loading) {
+    return <h1>Loading...</h1>;
   }
+  console.log(boards);
+  return (
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Ваши доски</h1>
+
+        <button onClick={signOut} className={styles.button}>
+          Sign out
+        </button>
+      </div>
+
+      <div className={styles.cards}>
+        <BoardCards boards={boards} getFullBoard={getFullBoard} />
+      </div>
+      <div className={styles.section}>
+        <button
+          onClick={() => setShowCreateBoard(showCreateBoard ? false : true)}
+          className={styles.button}
+        >
+          Create Board
+        </button>
+        {showCreateBoard && (
+          <form className={styles.form}>
+            <input
+              type="text"
+              placeholder="Board Title"
+              className={styles.input}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <button
+              onClick={() => createBoard(title)}
+              className={`${styles.button} ${styles.createButton}`}
+            >
+              Create
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}

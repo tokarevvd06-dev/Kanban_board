@@ -9,16 +9,17 @@ export const useAuthStore = create((set) => ({
 
     set({
       user: data.user,
-      token: data.token
+      token: data.token,
     });
   },
 
   logout: () => {
     localStorage.removeItem('token');
+    console.log('logout');
 
     set({
       user: null,
-      token: null
+      token: null,
     });
-  }
+  },
 }));

@@ -1,0 +1,33 @@
+.card {
+  padding: 1.25rem;
+  border: 1px solid #262626;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  background: #616154;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: #242121;
+  }
+}
+
+.title {
+  margin-bottom: 0.75rem;
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #a3a3a3;
+  font-size: 0.75rem;
+  background: #262626;
+}

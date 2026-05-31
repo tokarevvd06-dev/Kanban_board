@@ -1,0 +1,1066 @@
+
+====================================================================================================
+FILE: .\server\src\router.js
+====================================================================================================
+require("dotenv").config();
+
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+/* =========================
+   MIDDLEWARE
+========================= */
+app.use(cors());
+app.use(express.json());
+
+/* =========================
+   TEST ROUTE
+========================= */
+app.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    data: "API is working 🚀",
+  });
+});
+
+/* =========================
+   AUTH ROUTES
+========================= */
+app.use("/api/auth", require("./routes/authRoutes"));
+
+/* =========================
+   BOARD ROUTES
+========================= */
+app.use("/api/boards", require("./routes/boardRoutes"));
+
+/* =========================
+   COLUMN ROUTES
+========================= */
+app.use("/api/columns", require("./routes/columnRoutes"));
+
+/* =========================
+   TASK ROUTES
+========================= */
+app.use("/api/tasks", require("./routes/taskRoutes"));
+
+/* =========================
+   COMMENT ROUTES
+========================= */
+app.use("/api/comments", require("./routes/commentRoutes"));
+
+/* =========================
+   MEMBER ROUTES
+========================= */
+app.use("/api/members", require("./routes/memberRoutes"));
+
+/* =========================
+   404 HANDLER
+========================= */
+// 404
+app.use((req, res, next) => {
+  const error = new Error(`Route not found: ${req.originalUrl}`);
+  error.status = 404;
+  next(error);
+});
+
+// GLOBAL ERROR HANDLER
+app.use((err, req, res, next) => {
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Server error",
+  });
+});
+
+/* =========================
+   START SERVER
+========================= */
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+
+
+====================================================================================================
+FILE: .\server\src\controllers\authController.js
+====================================================================================================
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const pool = require('../db');
+const asyncHandler = require('../middleware/asyncHandler');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// REGISTER
+const register = asyncHandler(async (req, res) => {
+  const { email, password, name } = req.body;
+
+  if (!email || !password || !name) {
+    return res.status(400).json({ message: 'All fields required' });
+  }
+
+  // проверка существующего пользователя
+  const userExists = await pool.query(
+    'SELECT * FROM users WHERE email = $1',
+    [email]
+  );
+
+  if (userExists.rows.length > 0) {
+    return res.status(400).json({ message: 'User already exists' });
+  }
+
+  // хеш пароля
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // создание пользователя
+  const newUser = await pool.query(
+    `INSERT INTO users (email, password_hash, name)
+     VALUES ($1, $2, $3)
+     RETURNING id, email, name`,
+    [email, hashedPassword, name]
+  );
+
+  res.status(201).json({
+    success: true,
+    data: newUser.rows[0]
+  });
+});
+
+// LOGIN
+const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  const userResult = await pool.query(
+    'SELECT * FROM users WHERE email = $1',
+    [email]
+  );
+
+  const user = userResult.rows[0];
+
+  if (!user) {
+    return res.status(400).json({ message: 'Invalid credentials' });
+  }
+
+  const isValid = await bcrypt.compare(password, user.password_hash);
+
+  if (!isValid) {
+    return res.status(400).json({ message: 'Invalid credentials' });
+  }
+
+  // создаём JWT
+  const token = jwt.sign(
+    { id: user.id, email: user.email },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
+  res.json({
+    success: true,
+    data: {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      }
+    }
+  });
+});
+
+module.exports = { register, login };
+
+====================================================================================================
+FILE: .\server\src\controllers\boardController.js
+====================================================================================================
+const pool = require('../db');
+const asyncHandler = require('../middleware/asyncHandler');
+
+/* =========================
+   CREATE BOARD
+========================= */
+exports.createBoard = asyncHandler(async (req, res) => {
+  const { title } = req.body;
+  const userId = req.user.id;
+
+  if (!title) {
+    return res.status(400).json({ error: 'Title is required' });
+  }
+
+  const boardResult = await pool.query(
+    `INSERT INTO boards (title, owner_id)
+     VALUES ($1, $2)
+     RETURNING *`,
+    [title, userId]
+  );
+
+  const board = boardResult.rows[0];
+
+  // добавляем владельца в участники
+  await pool.query(
+      `INSERT INTO board_members (board_id, user_id, role)
+       VALUES ($1, $2, $3)`,
+      [board.id, userId, 'owner']
+    );
+
+    res.json({ success: true, data: board });});
+
+
+/* =========================
+   GET MY BOARDS
+========================= */
+exports.getMyBoards = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const result = await pool.query(
+    `SELECT b.*
+     FROM boards b
+     JOIN board_members bm ON bm.board_id = b.id
+     WHERE bm.user_id = $1
+     ORDER BY b.created_at DESC`,
+    [userId]
+  );
+
+  res.json({ success: true, data: result.rows });});
+
+
+/* =========================
+   GET BOARD BY ID
+========================= */
+exports.getBoard = asyncHandler(async (req, res) => {
+  const { boardId } = req.params;
+
+  const result = await pool.query(
+    `SELECT * FROM boards WHERE id = $1`,
+    [boardId]
+  );
+
+  if (!result.rows.length) {
+    const err = new Error('Board not found');
+    err.status = 404;
+    throw err;
+  }
+
+  res.json({
+    success: true,
+    data: result.rows[0]
+  });
+});
+
+
+/* =========================
+   GET FULL BOARD (columns + tasks)
+========================= */
+exports.getFullBoard = asyncHandler(async (req, res) => {
+  const { boardId } = req.params;
+
+  // 1. Проверяем существование доски
+  const boardRes = await pool.query(
+    `SELECT * FROM boards WHERE id = $1`,
+    [boardId]
+  );
+
+  if (!boardRes.rows.length) {
+    const err = new Error('Board not found');
+    err.status = 404;
+    throw err;
+  }
+
+  // 2. Проверяем доступ пользователя
+  const accessRes = await pool.query(
+    `SELECT 1 FROM board_members
+     WHERE board_id = $1 AND user_id = $2`,
+    [boardId, req.user.id]
+  );
+
+  if (!accessRes.rows.length) {
+    const err = new Error('Access denied to this board');
+    err.status = 403;
+    throw err;
+  }
+
+  // 3. Колонки
+  const columnsRes = await pool.query(
+    `SELECT * FROM columns
+     WHERE board_id = $1
+     ORDER BY position ASC`,
+    [boardId]
+  );
+
+  const columns = columnsRes.rows;
+
+  // 4. Задачи
+  const tasksRes = await pool.query(
+    `SELECT * FROM tasks
+     WHERE column_id IN (
+       SELECT id FROM columns WHERE board_id = $1
+     )
+     ORDER BY position ASC`,
+    [boardId]
+  );
+
+  const tasks = tasksRes.rows;
+
+  // 5. Склейка
+  const result = columns.map(col => ({
+    ...col,
+    tasks: tasks.filter(t => t.column_id === col.id)
+  }));
+
+  res.json({
+    success: true,
+    data: {
+      board: boardRes.rows[0],
+      columns: result
+    }
+  });
+});
+
+====================================================================================================
+FILE: .\server\src\controllers\columnController.js
+====================================================================================================
+const pool = require('../db');
+const asyncHandler = require('../middleware/asyncHandler');
+
+exports.createColumn = asyncHandler(async (req, res) => {
+  const { boardId, title } = req.body;
+
+  const boardCheck = await pool.query(
+    `SELECT id FROM boards WHERE id = $1`,
+    [boardId]
+  );
+  
+  if (!boardCheck.rows.length) {
+    const err = new Error('Board not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const accessCheck = await pool.query(
+    `SELECT 1 FROM board_members
+     WHERE board_id = $1 AND user_id = $2`,
+    [boardId, req.user.id]
+  );
+  
+  if (!accessCheck.rows.length) {
+    const err = new Error('Access denied to this board');
+    err.status = 403;
+    throw err;
+  }
+
+  const positionResult = await pool.query(
+    `SELECT COALESCE(MAX(position), 0) + 1 AS next_position
+     FROM columns WHERE board_id = $1`,
+    [boardId]
+  );
+
+    const position = positionResult.rows[0].next_position;
+
+    const result = await pool.query(
+      `INSERT INTO columns (board_id, title, position)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [boardId, title, position]
+    );
+
+    res.json({ success: true, data: result.rows[0] });
+  });
+
+exports.getColumnsByBoard = asyncHandler(async (req, res) => {
+  const { boardId } = req.params;
+
+  const result = await pool.query(
+    `SELECT * FROM columns
+     WHERE board_id = $1
+     ORDER BY position`,
+    [boardId]
+  );
+
+  res.json({ success: true, data: result.rows });
+});
+
+exports.reorderColumns = async (req, res) => {
+  const { columns } = req.body;
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+    await client.query('LOCK TABLE columns IN EXCLUSIVE MODE');
+
+    for (const col of columns) {
+      await client.query(
+        `UPDATE columns
+         SET position = $1
+         WHERE id = $2`,
+        [col.position, col.id]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, data: 'Columns reordered' });
+    } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+};
+
+====================================================================================================
+FILE: .\server\src\controllers\commentController.js
+====================================================================================================
+const pool = require('../db');
+const asyncHandler = require('../middleware/asyncHandler');
+
+// ➕ Создать комментарий к задаче
+exports.createComment = asyncHandler(async (req, res) => {
+  const { taskId } = req.params;
+  const { content } = req.body;
+  const userId = req.user.id;
+
+  const result = await pool.query(
+    `INSERT INTO comments (task_id, author_id, content)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+    [taskId, userId, content]
+  );
+
+  res.status(201).json({ success: true, data: result.rows[0] });
+});
+
+// 📥 Получить все комментарии задачи
+exports.getTaskComments = asyncHandler(async (req, res) => {
+  const { taskId } = req.params;
+
+  const result = await pool.query(
+    `SELECT c.*, u.email
+     FROM comments c
+     JOIN users u ON u.id = c.author_id
+     WHERE c.task_id = $1
+     ORDER BY c.created_at ASC`,
+    [taskId]
+  );
+
+  res.json({ success: true, data: result.rows });
+});
+
+// ❌ Удалить комментарий (только автор)
+exports.deleteComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const userId = req.user.id;
+
+  const result = await pool.query(
+    `DELETE FROM comments
+     WHERE id = $1 AND author_id = $2
+     RETURNING *`,
+    [commentId, userId]
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(403).json({ error: 'Нет доступа' });
+  }
+
+  res.json({ success: true, data: 'Комментарий удалён' });
+});
+
+
+
+// ✏️ Обновить комментарий (только автор)
+exports.updateComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const { content } = req.body;
+  const userId = req.user.id;
+
+  const result = await pool.query(
+    `UPDATE comments
+     SET content = $1
+     WHERE id = $2 AND author_id = $3
+     RETURNING *`,
+    [content, commentId, userId]
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(403).json({ error: 'Нет доступа к комментарию' });
+  }
+
+  res.json({ success: true, data: result.rows[0] });
+});
+
+====================================================================================================
+FILE: .\server\src\controllers\memberController.js
+====================================================================================================
+const pool = require('../db');
+const asyncHandler = require('../middleware/asyncHandler');
+
+// ➕ Добавить участника на доску (только owner)
+exports.addMember = asyncHandler(async (req, res) => {
+  const { boardId } = req.params;
+  const { email } = req.body;
+
+  if (req.userRole !== 'owner') {
+    return res.status(403).json({ error: 'Только владелец может добавлять участников' });
+  }
+
+  const userResult = await pool.query(
+    `SELECT id FROM users WHERE email = $1`,
+    [email]
+  );
+
+  if (userResult.rows.length === 0) {
+    return res.status(404).json({ error: 'Пользователь не найден' });
+  }
+
+  const userId = userResult.rows[0].id;
+
+
+  if (userId === req.user.id) {
+    const err = new Error('You are already on this board');
+    err.status = 400;
+    throw err;
+  }
+
+  await pool.query(
+    `INSERT INTO board_members (board_id, user_id, role)
+     VALUES ($1, $2, 'member')
+     ON CONFLICT DO NOTHING`,
+    [boardId, userId]
+  );
+
+  res.json({ success: true, data: 'Участник добавлен' });
+});
+
+// 📥 Получить всех участников доски
+exports.getMembers = asyncHandler(async (req, res) => {
+  const { boardId } = req.params;
+
+  const result = await pool.query(
+    `SELECT u.id, u.email, bm.role
+     FROM board_members bm
+     JOIN users u ON u.id = bm.user_id
+     WHERE bm.board_id = $1`,
+    [boardId]
+  );
+
+  res.json({ success: true, data: result.rows });
+});
+
+// ❌ Удалить участника (нельзя удалить owner)
+exports.removeMember = asyncHandler(async (req, res) => {
+  const { boardId, userId } = req.params;
+
+  if (parseInt(userId) === req.user.id) {
+    const err = new Error('Owner cannot remove himself');
+    err.status = 400;
+    throw err;
+  }
+
+  if (req.userRole !== 'owner') {
+    return res.status(403).json({ error: 'Только владелец может удалять участников' });
+  }
+
+  const roleResult = await pool.query(
+    `SELECT role FROM board_members
+     WHERE board_id = $1 AND user_id = $2`,
+    [boardId, userId]
+  );
+
+  if (roleResult.rows[0]?.role === 'owner') {
+    return res.status(400).json({ error: 'Нельзя удалить владельца доски' });
+  }
+
+  await pool.query(
+    `DELETE FROM board_members
+     WHERE board_id = $1 AND user_id = $2`,
+    [boardId, userId]
+  );
+
+  res.json({ success: true, data: 'Участник удалён' });
+});
+
+====================================================================================================
+FILE: .\server\src\controllers\taskController.js
+====================================================================================================
+const pool = require('../db');
+const asyncHandler = require('../middleware/asyncHandler');
+
+exports.createTask = asyncHandler(async (req, res) => {
+  const { columnId, title, description } = req.body;
+
+  const columnCheck = await pool.query(
+    `SELECT id FROM columns WHERE id = $1`,
+    [columnId]
+  );
+  
+  if (!columnCheck.rows.length) {
+    const err = new Error('Column not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const positionResult = await pool.query(
+    `SELECT COALESCE(MAX(position), 0) + 1 AS next_position
+     FROM tasks WHERE column_id = $1`,
+    [columnId]
+  );
+
+  const position = positionResult.rows[0].next_position;
+
+  const result = await pool.query(
+    `INSERT INTO tasks (column_id, title, description, position)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [columnId, title, description, position]
+  );
+
+  res.json({ success: true, data: result.rows[0] });
+});
+
+exports.moveTask = async (req, res) => {
+    const client = await pool.connect();
+  
+    try {
+      const { taskId, fromColumnId, toColumnId, newPosition } = req.body;
+  
+      await client.query('BEGIN');
+      await client.query('LOCK TABLE tasks IN EXCLUSIVE MODE');
+      // 1. получаем старую позицию задачи
+      const taskRes = await client.query(
+        `SELECT position FROM tasks WHERE id = $1`,
+        [taskId]
+      );
+  
+      const oldPosition = taskRes.rows[0].position;
+  
+      if (fromColumnId === toColumnId) {
+        if (newPosition === oldPosition) {
+          return res.json({ success: true, data: 'No changes' });
+        }
+      
+        // сдвиг внутри одной колонки
+        await client.query(
+          `UPDATE tasks
+           SET position = position + CASE
+             WHEN $1 < $2 THEN -1
+             ELSE 1
+           END
+           WHERE column_id = $3
+             AND position BETWEEN LEAST($1, $2) AND GREATEST($1, $2)
+             AND id != $4`,
+          [oldPosition, newPosition, fromColumnId, taskId]
+        );
+      
+        await client.query(
+          `UPDATE tasks SET position = $1 WHERE id = $2`,
+          [newPosition, taskId]
+        );
+      
+        await client.query('COMMIT');
+        return res.json({ success: true, data: 'Task moved inside column' });
+      }
+      
+      /* =========================
+         STEP 1: FIX OLD COLUMN
+      ========================= */
+  
+      await client.query(
+        `UPDATE tasks
+         SET position = position - 1
+         WHERE column_id = $1 AND position > $2`,
+        [fromColumnId, oldPosition]
+      );
+  
+      /* =========================
+         STEP 2: SHIFT NEW COLUMN
+      ========================= */
+  
+      await client.query(
+        `UPDATE tasks
+         SET position = position + 1
+         WHERE column_id = $1 AND position >= $2`,
+        [toColumnId, newPosition]
+      );
+  
+      /* =========================
+         STEP 3: MOVE TASK
+      ========================= */
+  
+      await client.query(
+        `UPDATE tasks
+         SET column_id = $1,
+             position = $2
+         WHERE id = $3`,
+        [toColumnId, newPosition, taskId]
+      );
+  
+      await client.query('COMMIT');
+  
+      res.json({ success: true, data: 'Task moved' });
+  
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error(err);
+      res.status(500).json({ error: err.message });
+  
+    } finally {
+      client.release();
+    }
+  };
+
+exports.getTasksByColumn = asyncHandler(async (req, res) => {
+  const { columnId } = req.params;
+
+  const result = await pool.query(
+    `SELECT * FROM tasks
+     WHERE column_id = $1
+     ORDER BY position`,
+    [columnId]
+  );
+
+  res.json({ success: true, data: result.rows });
+});
+
+exports.reorderTasks = async (req, res) => {
+  const { tasks } = req.body;
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+    await client.query('LOCK TABLE tasks IN EXCLUSIVE MODE');
+
+    for (const task of tasks) {
+      await client.query(
+        `UPDATE tasks
+         SET position = $1
+         WHERE id = $2`,
+        [task.position, task.id]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, data: 'Tasks reordered' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+};
+
+====================================================================================================
+FILE: .\server\src\db\index.js
+====================================================================================================
+const { Pool } = require('pg');
+require('dotenv').config();
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+module.exports = pool;
+
+====================================================================================================
+FILE: .\server\src\middleware\accessMiddleware.js
+====================================================================================================
+const pool = require('../db');
+
+/* =========================
+   CHECK BOARD ACCESS
+========================= */
+exports.checkBoardAccess = async (req, res, next) => {
+  try {
+    const boardId =
+      req.params.boardId ||
+      req.body.boardId ||
+      req.params.id;
+
+    const userId = req.user.id;
+
+    if (!boardId) {
+      return res.status(400).json({ error: 'boardId not provided' });
+    }
+
+    const result = await pool.query(
+      `SELECT role FROM board_members
+       WHERE board_id = $1 AND user_id = $2`,
+      [boardId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied to this board' });
+    }
+
+    req.userRole = result.rows[0].role;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* =========================
+   CHECK COLUMN ACCESS
+========================= */
+exports.checkColumnAccess = async (req, res, next) => {
+  try {
+    const columnId = req.params.columnId || req.body.columnId;
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `SELECT bm.role
+       FROM columns c
+       JOIN board_members bm ON bm.board_id = c.board_id
+       WHERE c.id = $1 AND bm.user_id = $2`,
+      [columnId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied to this column' });
+    }
+
+    req.userRole = result.rows[0].role;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* =========================
+   CHECK TASK ACCESS
+========================= */
+exports.checkTaskAccess = async (req, res, next) => {
+  try {
+    const taskId = req.params.taskId || req.body.taskId;
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `SELECT bm.role
+       FROM tasks t
+       JOIN columns c ON c.id = t.column_id
+       JOIN board_members bm ON bm.board_id = c.board_id
+       WHERE t.id = $1 AND bm.user_id = $2`,
+      [taskId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied to this task' });
+    }
+
+    req.userRole = result.rows[0].role;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+====================================================================================================
+FILE: .\server\src\middleware\asyncHandler.js
+====================================================================================================
+module.exports = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+
+====================================================================================================
+FILE: .\server\src\middleware\authMiddleware.js
+====================================================================================================
+const jwt = require('jsonwebtoken');
+
+module.exports = function authMiddleware(req, res, next) {
+  try {
+
+    // 1. Проверяем заголовок
+    const authHeader = req.headers.authorization;
+
+
+    if (!authHeader) {
+      return res.status(401).json({
+        error: 'No authorization header'
+      });
+    }
+
+    // 2. Проверяем формат Bearer token
+    const parts = authHeader.split(' ');
+
+    if (parts.length !== 2) {
+      return res.status(401).json({
+        error: 'Invalid token format'
+      });
+    }
+
+    const scheme = parts[0];
+    const token = parts[1];
+
+    if (scheme !== 'Bearer') {
+      return res.status(401).json({
+        error: 'Authorization must be Bearer token'
+      });
+    }
+
+    // 3. Проверяем JWT
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+
+    // 4. Кладём пользователя в req
+    req.user = decoded;
+
+    
+    next();
+
+  } catch (err) {
+    
+
+    return res.status(401).json({
+      error: 'Invalid token'
+    });
+  }
+};
+
+====================================================================================================
+FILE: .\server\src\middleware\validate.js
+====================================================================================================
+exports.requireFields = (...fields) => (req, res, next) => {
+    for (const field of fields) {
+      const value = req.body[field];
+  
+      if (
+        value === undefined ||
+        value === null ||
+        (typeof value === 'string' && value.trim() === '')
+      ) {
+        const err = new Error(`${field} is required`);
+        err.status = 400;
+        return next(err);
+      }
+    }
+    next();
+  };
+
+====================================================================================================
+FILE: .\server\src\routes\authRoutes.js
+====================================================================================================
+const express = require('express');
+const { register, login } = require('../controllers/authController');
+const { requireFields } = require('../middleware/validate')
+
+const router = express.Router();
+
+router.post('/register', requireFields('email', 'password', 'name'), register);
+router.post('/login', requireFields('email', 'password'), login);
+
+module.exports = router;
+
+====================================================================================================
+FILE: .\server\src\routes\boardRoutes.js
+====================================================================================================
+const router = require('express').Router();
+const auth = require('../middleware/authMiddleware');
+const controller = require('../controllers/boardController');
+const { checkBoardAccess } = require('../middleware/accessMiddleware');
+const { requireFields } = require('../middleware/validate')
+/* =========================
+   BOARDS
+========================= */
+
+// создать доску
+router.post('/', auth, requireFields('title'), controller.createBoard);
+
+// получить мои доски
+router.get('/my', auth, controller.getMyBoards);
+
+// получить одну доску
+router.get('/:boardId', auth, checkBoardAccess, controller.getBoard);
+
+// получить доску с колонками и задачами
+router.get('/:boardId/full', auth, controller.getFullBoard);
+
+module.exports = router;
+
+====================================================================================================
+FILE: .\server\src\routes\columnRoutes.js
+====================================================================================================
+const router = require('express').Router();
+const auth = require('../middleware/authMiddleware');
+const { requireFields } = require('../middleware/validate')
+
+const controller = require('../controllers/columnController');
+const { checkBoardAccess, checkColumnAccess } = require('../middleware/accessMiddleware');
+
+router.post('/', auth,
+    requireFields('boardId', 'title'),
+    controller.createColumn
+);
+
+router.get('/board/:boardId', auth, checkBoardAccess, controller.getColumnsByBoard);
+router.patch('/reorder', auth, checkBoardAccess,
+    requireFields('columns'),
+    controller.reorderColumns
+);
+module.exports = router;
+
+====================================================================================================
+FILE: .\server\src\routes\commentRoutes.js
+====================================================================================================
+const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/authMiddleware');
+const comments = require('../controllers/commentController');
+const { checkTaskAccess } = require('../middleware/accessMiddleware');
+const { requireFields } = require('../middleware/validate')
+
+router.post('/task/:taskId', auth, checkTaskAccess,
+    requireFields('content'),
+    comments.createComment
+);
+
+router.patch('/:commentId', auth,
+    requireFields('content'),
+    comments.updateComment
+);
+router.get('/task/:taskId', auth, checkTaskAccess, comments.getTaskComments);
+router.delete('/:commentId', auth, comments.deleteComment);
+
+module.exports = router;
+
+====================================================================================================
+FILE: .\server\src\routes\memberRoutes.js
+====================================================================================================
+const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/authMiddleware');
+const members = require('../controllers/memberController');
+const { checkBoardAccess } = require('../middleware/accessMiddleware');
+const { requireFields } = require('../middleware/validate')
+
+router.post('/:boardId', auth, checkBoardAccess,
+    requireFields('email'),
+    members.addMember
+);
+router.get('/:boardId', auth, checkBoardAccess, members.getMembers);
+router.delete('/:boardId/:userId', auth, checkBoardAccess, members.removeMember);
+module.exports = router;
+
+====================================================================================================
+FILE: .\server\src\routes\taskRoutes.js
+====================================================================================================
+const router = require('express').Router();
+const auth = require('../middleware/authMiddleware');
+const controller = require('../controllers/taskController');
+const { checkColumnAccess, checkTaskAccess } = require('../middleware/accessMiddleware');
+const { requireFields } = require('../middleware/validate')
+
+router.post('/', auth, 
+    requireFields('columnId', 'title'),
+    controller.createTask
+  );
+router.get('/:columnId', auth, checkColumnAccess, controller.getTasksByColumn);
+router.patch('/reorder', auth, checkColumnAccess,
+    requireFields('tasks'),
+    controller.reorderTasks
+);
+router.patch('/move', auth, checkTaskAccess,
+    requireFields('taskId', 'fromColumnId', 'toColumnId', 'newPosition'),
+    controller.moveTask
+);
+module.exports = router;

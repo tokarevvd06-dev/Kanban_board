@@ -1,0 +1,119 @@
+@use '../../styles/variables' as v;
+
+.board {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  min-height: calc(100vh - 10rem);
+}
+
+.addColumn {
+  flex-shrink: 0;
+  width: 17rem;
+}
+
+.addBtn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px dashed v.$border;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: v.$text;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+
+  &:hover {
+    border-color: v.$accent-border;
+    color: v.$text-h;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid v.$border;
+  border-radius: 0.75rem;
+  background: v.$code-bg;
+}
+
+.input {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid v.$border;
+  border-radius: 0.5rem;
+  background: v.$bg;
+  color: v.$text-h;
+  font-size: 0.875rem;
+  outline: none;
+
+  &:focus {
+    border-color: v.$accent-border;
+  }
+}
+
+.formActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.submitBtn {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: v.$accent;
+  color: #fff;
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.cancelBtn {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid v.$border;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: v.$text;
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  &:hover {
+    color: v.$text-h;
+  }
+}
+
+.overlayColumn {
+  width: 17rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: v.$code-bg;
+  border: 1px solid v.$accent-border;
+  box-shadow: v.$shadow;
+
+  h2 {
+    margin: 0;
+    font-size: 0.9375rem;
+  }
+}
+
+.overlayTask {
+  width: 15rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: v.$code-bg;
+  border: 1px solid v.$accent-border;
+  box-shadow: v.$shadow;
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: v.$text-h;
+  }
+}

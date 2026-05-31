@@ -1,0 +1,51 @@
+@use './variables' as variables;
+// @import './_mixins.scss';
+
+:root {
+  --text: variables.$text;
+  --text-h: variables.$text-h;
+  --bg: variables.$bg;
+  --border: variables.$border;
+  --code-bg: variables.$code-bg;
+  --accent: variables.$accent;
+  --accent-bg: variables.$accent-bg;
+  --accent-border: variables.$accent-border;
+  --social-bg: variables.$social-bg;
+  --shadow: variables.$shadow;
+  //   font: 18px/145% variables.$sans;
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: variables.$text;
+  background: variables.$bg;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+body {
+  margin: 0;
+}
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: variables.$text-h;
+}
+
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
