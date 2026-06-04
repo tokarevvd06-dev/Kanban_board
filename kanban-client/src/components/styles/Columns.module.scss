@@ -23,7 +23,9 @@
   color: v.$text;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 
   &:hover {
     border-color: v.$accent-border;
@@ -66,7 +68,7 @@
   border: none;
   border-radius: 0.5rem;
   background: v.$accent;
-  color: #fff;
+  color: v.$text-h;
   font-size: 0.8125rem;
   cursor: pointer;
 
@@ -99,7 +101,7 @@
 
   h2 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: 1rem;
   }
 }
 

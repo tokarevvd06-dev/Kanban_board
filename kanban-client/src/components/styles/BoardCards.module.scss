@@ -1,19 +1,21 @@
+@use '../../styles/variables' as v;
+
 .card {
   padding: 1.25rem;
-  border: 1px solid #262626;
+  border: 1px solid v.$border;
   border-radius: 0.75rem;
   cursor: pointer;
-  background: #616154;
+  background: v.$accent;
   transition: background-color 0.2s ease;
 
   &:hover {
-    background: #242121;
+    background: v.$hover;
   }
 }
 
 .title {
   margin-bottom: 0.75rem;
-  color: #fff;
+  color: v.$text-h;
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -27,7 +29,7 @@
 .tag {
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
-  color: #a3a3a3;
+  color: v.$text;
   font-size: 0.75rem;
-  background: #262626;
+  background: v.$hover;
 }

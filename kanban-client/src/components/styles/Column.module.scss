@@ -1,18 +1,10 @@
 @use '../../styles/variables' as v;
 
 .column {
-  flex-shrink: 0;
-  width: 17rem;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 10rem);
-  border-radius: 0.75rem;
-  background: v.$code-bg;
-  border: 1px solid v.$border;
-
-  &.dragging {
-    opacity: 0.4;
-  }
+  flex: 1;
+  min-height: 0;
 }
 
 .header {
@@ -20,7 +12,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.875rem 1rem;
+  padding: 1rem;
   cursor: grab;
   user-select: none;
 
@@ -31,7 +23,7 @@
 
 .title {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 500;
   color: v.$text-h;
 }
@@ -49,9 +41,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 0 0.75rem;
+  padding: 0.75rem;
   overflow-y: auto;
   min-height: 3rem;
+  background: v.$code-bg;
 
   &.dropTarget {
     background: v.$accent-bg;
@@ -90,7 +83,7 @@
 .addBtn {
   flex: 1;
   padding: 0.5rem;
-  border: none;
+  border: 1px solid v.$border;
   border-radius: 0.5rem;
   background: v.$accent;
   color: #fff;
@@ -119,7 +112,7 @@
 .addTaskBtn {
   margin: 0.5rem 0.75rem 0.75rem;
   padding: 0.5rem;
-  border: none;
+  border: 1px solid v.$border;
   border-radius: 0.5rem;
   background: transparent;
   color: v.$text;

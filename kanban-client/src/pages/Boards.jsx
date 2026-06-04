@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import { useState, useEffect } from 'react';
-import BoardCards from '../components/boardCards';
+import BoardCards from '../components/BoardCards';
 import { useAuthStore } from '../store/authStore';
 import styles from './styles/Boards.module.scss';
 export default function Boards() {
@@ -30,9 +30,7 @@ export default function Boards() {
   }, []);
 
   const getFullBoard = async (id) => {
-    // const resp = await api.get(`boards/${id}/full`);
     navigate(`/board-page/${id}`);
-    // console.log(resp);
   };
 
   const createBoard = async (title) => {
@@ -48,32 +46,44 @@ export default function Boards() {
   if (loading) {
     return <h1>Loading...</h1>;
   }
-  console.log(boards);
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Ваши доски</h1>
 
         <button onClick={signOut} className={styles.button}>
-          Sign out
+          Выйти
         </button>
       </div>
+      {boards.length === 0 ? (
+        <h2>У вас ещё нет досок...</h2>
+      ) : (
+        <div className={styles.cards}>
+          <BoardCards boards={boards} getFullBoard={getFullBoard} />
+        </div>
+      )}
 
-      <div className={styles.cards}>
-        <BoardCards boards={boards} getFullBoard={getFullBoard} />
-      </div>
       <div className={styles.section}>
-        <button
-          onClick={() => setShowCreateBoard(showCreateBoard ? false : true)}
-          className={styles.button}
-        >
-          Create Board
-        </button>
+        {!showCreateBoard ? (
+          <button
+            onClick={() => setShowCreateBoard(showCreateBoard ? false : true)}
+            className={styles.button}
+          >
+            Создать доску
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowCreateBoard(showCreateBoard ? false : true)}
+            className={styles.button}
+          >
+            Отменить
+          </button>
+        )}
         {showCreateBoard && (
           <form className={styles.form}>
             <input
               type="text"
-              placeholder="Board Title"
+              placeholder="Название доски"
               className={styles.input}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -81,7 +91,7 @@ export default function Boards() {
               onClick={() => createBoard(title)}
               className={`${styles.button} ${styles.createButton}`}
             >
-              Create
+              Создать
             </button>
           </form>
         )}

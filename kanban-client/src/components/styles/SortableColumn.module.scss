@@ -1,0 +1,57 @@
+@use '../../styles/variables' as v;
+
+.wrapper {
+  flex-shrink: 0;
+  width: 17rem;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 10rem);
+  border-radius: 0.75rem;
+  background: v.$code-bg;
+  border: 1px solid v.$border;
+
+  &.dragging {
+    opacity: 0.45;
+  }
+}
+
+.handle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid v.$border;
+  cursor: grab;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.grip {
+  width: 0.5rem;
+  height: 1rem;
+  flex-shrink: 0;
+  background: radial-gradient(circle, v.$text 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: 0.6;
+}
+
+.handleTitle {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: v.$text-h;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  font-size: 0.75rem;
+  color: v.$text;
+  background: v.$social-bg;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+}

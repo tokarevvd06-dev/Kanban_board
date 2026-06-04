@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { DragDropProvider, DragOverlay } from '@dnd-kit/react';
 import { isSortable } from '@dnd-kit/dom/sortable';
-import Column from './Column';
+import SortableColumn from './SortableColumn';
+import { idsEqual, parseColumnId, parseTaskId } from '../utils/dnd';
 import styles from './styles/Columns.module.scss';
 
 function arrayMove(array, from, to) {
@@ -20,6 +21,7 @@ export default function Columns({
   onMoveTask,
 }) {
   const [activeItem, setActiveItem] = useState(null);
+  const [draggingColumn, setDraggingColumn] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [columnTitle, setColumnTitle] = useState('');
 
@@ -30,15 +32,17 @@ export default function Columns({
     const data = source.data ?? {};
 
     if (data.type === 'column') {
-      const colId = String(source.id).replace('column-', '');
-      const column = columns.find((c) => String(c.id) === colId);
+      setDraggingColumn(true);
+      const colId = data.columnId ?? parseColumnId(source.id);
+      const column = columns.find((c) => idsEqual(c.id, colId));
       if (column) setActiveItem({ type: 'column', ...column });
       return;
     }
 
     if (data.type === 'task') {
+      const taskId = data.taskId ?? parseTaskId(source.id);
       for (const col of columns) {
-        const task = col.tasks?.find((t) => String(t.id) === String(source.id));
+        const task = col.tasks?.find((t) => idsEqual(t.id, taskId));
         if (task) {
           setActiveItem({ type: 'task', ...task });
           break;
@@ -49,6 +53,7 @@ export default function Columns({
 
   const handleDragEnd = async (event) => {
     setActiveItem(null);
+    setDraggingColumn(false);
 
     if (event.canceled) return;
 
@@ -59,10 +64,23 @@ export default function Columns({
     const data = source.data ?? {};
 
     if (data.type === 'column') {
-      if (sortable.initialIndex === sortable.index) return;
+      const fromIndex = sortable.initialIndex;
+      let toIndex = sortable.index;
+
+      if (target && isSortable(target)) {
+        const targetData = target.data ?? {};
+        if (targetData.type === 'column') {
+          const targetColId =
+            targetData.columnId ?? parseColumnId(target.id);
+          const idx = columns.findIndex((c) => idsEqual(c.id, targetColId));
+          if (idx !== -1) toIndex = idx;
+        }
+      }
+
+      if (fromIndex === toIndex || toIndex < 0) return;
 
       const prev = columns;
-      const reordered = arrayMove(prev, sortable.initialIndex, sortable.index);
+      const reordered = arrayMove(prev, fromIndex, toIndex);
       setColumns(reordered);
 
       try {
@@ -76,20 +94,24 @@ export default function Columns({
     }
 
     if (data.type === 'task') {
-      const taskId = source.id;
-      let fromColumnId = sortable.initialGroup;
-      let toColumnId = sortable.group;
+      const taskId = data.taskId ?? parseTaskId(source.id);
+      const fromColumnId =
+        parseColumnId(sortable.initialGroup) ?? data.columnId;
+      let toColumnId = parseColumnId(sortable.group);
       let newIndex = sortable.index;
 
       if (target && !isSortable(target)) {
-        toColumnId = target.id;
-        const toCol = columns.find((c) => String(c.id) === String(toColumnId));
+        toColumnId = parseColumnId(target.id);
+        const toCol = columns.find((c) => idsEqual(c.id, toColumnId));
         newIndex = toCol?.tasks?.length ?? 0;
       }
 
       if (
-        sortable.initialIndex === newIndex &&
-        String(fromColumnId) === String(toColumnId)
+        !taskId ||
+        !fromColumnId ||
+        !toColumnId ||
+        (sortable.initialIndex === newIndex &&
+          idsEqual(fromColumnId, toColumnId))
       ) {
         return;
       }
@@ -100,13 +122,11 @@ export default function Columns({
         tasks: [...(col.tasks ?? [])],
       }));
 
-      const fromCol = next.find((c) => String(c.id) === String(fromColumnId));
-      const toCol = next.find((c) => String(c.id) === String(toColumnId));
+      const fromCol = next.find((c) => idsEqual(c.id, fromColumnId));
+      const toCol = next.find((c) => idsEqual(c.id, toColumnId));
       if (!fromCol || !toCol) return;
 
-      const taskIdx = fromCol.tasks.findIndex(
-        (t) => String(t.id) === String(taskId),
-      );
+      const taskIdx = fromCol.tasks.findIndex((t) => idsEqual(t.id, taskId));
       if (taskIdx === -1) return;
 
       const [task] = fromCol.tasks.splice(taskIdx, 1);
@@ -115,9 +135,9 @@ export default function Columns({
 
       try {
         await onMoveTask({
-          taskId: task.id,
-          fromColumnId: Number(fromColumnId),
-          toColumnId: Number(toColumnId),
+          taskId,
+          fromColumnId,
+          toColumnId,
           newPosition: newIndex + 1,
         });
       } catch {
@@ -131,20 +151,25 @@ export default function Columns({
     const title = columnTitle.trim();
     if (!title) return;
 
-    await onCreateColumn(title);
-    setColumnTitle('');
-    setShowForm(false);
+    try {
+      await onCreateColumn(title);
+      setColumnTitle('');
+      setShowForm(false);
+    } catch (err) {
+      console.error(err.response?.data?.message ?? err.message);
+    }
   };
 
   return (
     <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className={styles.board}>
         {columns.map((column, index) => (
-          <Column
+          <SortableColumn
             key={column.id}
             column={column}
             index={index}
             onCreateTask={onCreateTask}
+            tasksDisabled={draggingColumn}
           />
         ))}
 

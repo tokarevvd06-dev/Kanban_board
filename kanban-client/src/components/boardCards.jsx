@@ -12,11 +12,16 @@ const BoardCards = ({ boards, getFullBoard }) => {
       <h3 className={styles.title}>{board.title}</h3>
 
       <div className={styles.tags}>
-        {board.columns?.slice(0, 4).map((col, i) => (
-          <span key={i} className={styles.tag}>
-            {col.title}
-          </span>
-        ))}
+        {board.columns.length !== 0 ? (
+          board.columns.slice(0, 4).map((col, i) => (
+            <span key={i} className={styles.tag}>
+              {col.title}
+            </span>
+          ))
+        ) : (
+          <span className={styles.tag}>Нет колонок</span>
+        )}
+        {console.log(board.columns.length)}
       </div>
     </div>
   ));

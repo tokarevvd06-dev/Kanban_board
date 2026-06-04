@@ -32,7 +32,7 @@ export default function BoardPage() {
   }, [fetchBoard]);
 
   const handleCreateColumn = async (title) => {
-    const newColumn = await createColumn(Number(id), title);
+    const newColumn = await createColumn(id, title);
     setColumns((prev) => [...prev, { ...newColumn, tasks: [] }]);
   };
 
@@ -40,7 +40,7 @@ export default function BoardPage() {
     const newTask = await createTask(columnId, title);
     setColumns((prev) =>
       prev.map((col) =>
-        col.id === columnId
+        String(col.id) === String(columnId)
           ? { ...col, tasks: [...(col.tasks ?? []), newTask] }
           : col,
       ),
@@ -48,7 +48,7 @@ export default function BoardPage() {
   };
 
   const handleReorderColumns = async (columnsPayload) => {
-    await reorderColumns(Number(id), columnsPayload);
+    await reorderColumns(id, columnsPayload);
   };
 
   const handleMoveTask = async (payload) => {
