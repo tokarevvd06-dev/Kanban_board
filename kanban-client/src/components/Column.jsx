@@ -7,6 +7,8 @@ import styles from './styles/Column.module.scss';
 export default function Column({
   column,
   onCreateTask,
+  onOpenTask,
+  onDeleteColumn,
   tasksDisabled = false,
   hideHeader = false,
 }) {
@@ -42,7 +44,7 @@ export default function Column({
         ref={dropRef}
         className={`${styles.tasks} ${isDropTarget ? styles.dropTarget : ''}`}
       >
-        {column.tasks ? (
+        {column.tasks.length > 0 ? (
           column.tasks.map((task, taskIndex) => (
             <TaskCard
               key={task.id}
@@ -50,10 +52,11 @@ export default function Column({
               index={taskIndex}
               columnId={column.id}
               disabled={tasksDisabled}
+              onOpen={() => onOpenTask?.(task, column.id)}
             />
           ))
         ) : (
-          <h4>No tasks</h4>
+          <h4>Нет задач</h4>
         )}
       </div>
 
@@ -84,13 +87,27 @@ export default function Column({
           </div>
         </form>
       ) : (
-        <button
-          type="button"
-          className={styles.addTaskBtn}
-          onClick={() => setShowForm(true)}
-        >
-          + Добавить задачу
-        </button>
+        <div className={styles.addTaskBtnContainer}>
+          <button
+            type="button"
+            className={styles.addTaskBtn}
+            onClick={() => setShowForm(true)}
+          >
+            + Добавить задачу
+          </button>
+          <button
+            type="button"
+            className={styles.deleteBtn}
+            title="Удалить колонку"
+            aria-label="Удалить колонку"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteColumn(column.id);
+            }}
+          >
+            ×
+          </button>
+        </div>
       )}
     </div>
   );

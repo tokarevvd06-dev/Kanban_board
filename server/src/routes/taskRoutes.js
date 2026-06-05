@@ -17,4 +17,12 @@ router.patch('/move', auth, checkTaskAccess,
     requireFields('taskId', 'fromColumnId', 'toColumnId', 'newPosition'),
     controller.moveTask
 );
+
+router.delete(
+  '/item/:taskId',
+  auth,
+  checkTaskAccess,
+  controller.deleteTask,
+);
+
 module.exports = router;

@@ -3,7 +3,13 @@ import { useSortable } from '@dnd-kit/react/sortable';
 import { dndTaskGroup, dndTaskId } from '../utils/dnd';
 import styles from './styles/TaskCard.module.scss';
 
-export default function TaskCard({ task, index, columnId, disabled = false }) {
+export default function TaskCard({
+  task,
+  index,
+  columnId,
+  disabled = false,
+  onOpen,
+}) {
   const { ref, isDragging } = useSortable({
     id: dndTaskId(task.id),
     index,
@@ -19,6 +25,7 @@ export default function TaskCard({ task, index, columnId, disabled = false }) {
     <div
       ref={ref}
       className={`${styles.card} ${isDragging ? styles.dragging : ''}`}
+      onClick={() => onOpen?.()}
     >
       <p className={styles.title}>{task.title}</p>
       {task.description && (

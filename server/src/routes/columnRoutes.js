@@ -15,4 +15,12 @@ router.patch('/reorder', auth, checkBoardAccess,
     requireFields('columns'),
     controller.reorderColumns
 );
+
+router.delete(
+  '/:columnId',
+  auth,
+  checkColumnAccess,
+  controller.deleteColumn,
+);
+
 module.exports = router;

@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
+import { deleteBoard } from '../api/boards';
 import { useState, useEffect } from 'react';
-import BoardCards from '../components/BoardCards';
+import BoardCards from '../components/boardCards.jsx';
 import { useAuthStore } from '../store/authStore';
 import styles from './styles/Boards.module.scss';
 export default function Boards() {
@@ -35,7 +36,21 @@ export default function Boards() {
 
   const createBoard = async (title) => {
     const resp = await api.post('/boards', { title: title });
-    console.log(resp);
+    setBoards((prev) => [...prev, { ...resp.data.data, columns: [] }]);
+    setShowCreateBoard(false);
+  };
+
+  const handleDeleteBoard = async (boardId) => {
+    if (!window.confirm('Удалить доску? Все колонки и задачи будут удалены.')) {
+      return;
+    }
+
+    try {
+      await deleteBoard(boardId);
+      setBoards((prev) => prev.filter((b) => b.id !== boardId));
+    } catch (err) {
+      console.error(err.response?.data?.message ?? err.message);
+    }
   };
 
   const signOut = async () => {
@@ -59,7 +74,11 @@ export default function Boards() {
         <h2>У вас ещё нет досок...</h2>
       ) : (
         <div className={styles.cards}>
-          <BoardCards boards={boards} getFullBoard={getFullBoard} />
+          <BoardCards
+            boards={boards}
+            getFullBoard={getFullBoard}
+            onDeleteBoard={handleDeleteBoard}
+          />
         </div>
       )}
 

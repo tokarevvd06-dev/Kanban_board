@@ -34,3 +34,12 @@ export const moveTask = async ({
   });
   return resp.data;
 };
+
+export const deleteTask = async (taskId) => {
+  if (!taskId) {
+    throw new Error('Некорректный id задачи');
+  }
+
+  const resp = await api.delete(`/tasks/item/${taskId}`);
+  return resp.data;
+};

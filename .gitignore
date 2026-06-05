@@ -6,3 +6,4 @@ build
 dump.ps1
 project_dump.txt
 backend
+.vscode

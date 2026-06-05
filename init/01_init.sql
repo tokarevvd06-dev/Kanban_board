@@ -58,8 +58,20 @@ CREATE TABLE tasks (
 );
 
 -- ================================
+-- COMMENTS
+-- ================================
+CREATE TABLE comments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ================================
 -- INDEXES (PERFORMANCE)
 -- ================================
 CREATE INDEX idx_board_members_user ON board_members(user_id);
 CREATE INDEX idx_columns_board ON columns(board_id);
 CREATE INDEX idx_tasks_column ON tasks(column_id);
+CREATE INDEX idx_comments_task ON comments(task_id);

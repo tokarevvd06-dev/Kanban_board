@@ -19,6 +19,8 @@ export default function Columns({
   onCreateTask,
   onReorderColumns,
   onMoveTask,
+  onDeleteColumn,
+  onOpenTask,
 }) {
   const [activeItem, setActiveItem] = useState(null);
   const [draggingColumn, setDraggingColumn] = useState(false);
@@ -169,6 +171,8 @@ export default function Columns({
             column={column}
             index={index}
             onCreateTask={onCreateTask}
+            onDeleteColumn={onDeleteColumn}
+            onOpenTask={onOpenTask}
             tasksDisabled={draggingColumn}
           />
         ))}

@@ -24,3 +24,12 @@ export const reorderColumns = async (boardId, columns) => {
   });
   return resp.data;
 };
+
+export const deleteColumn = async (columnId) => {
+  if (!columnId) {
+    throw new Error('Некорректный id колонки');
+  }
+
+  const resp = await api.delete(`/columns/${columnId}`);
+  return resp.data;
+};

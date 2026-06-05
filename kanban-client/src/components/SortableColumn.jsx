@@ -8,6 +8,8 @@ export default function SortableColumn({
   column,
   index,
   onCreateTask,
+  onOpenTask,
+  onDeleteColumn,
   tasksDisabled,
 }) {
   const {
@@ -33,11 +35,25 @@ export default function SortableColumn({
         <span className={styles.grip} aria-hidden />
         <span className={styles.handleTitle}>{column.title}</span>
         <span className={styles.count}>{column.tasks?.length ?? 0}</span>
+        {/* <button
+          type="button"
+          className={styles.deleteBtn}
+          title="Удалить колонку"
+          aria-label="Удалить колонку"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeleteColumn(column.id);
+          }}
+        >
+          ×
+        </button> */}
       </div>
       <Column
         column={column}
         onCreateTask={onCreateTask}
+        onOpenTask={onOpenTask}
         tasksDisabled={tasksDisabled}
+        onDeleteColumn={onDeleteColumn}
         hideHeader
       />
     </div>

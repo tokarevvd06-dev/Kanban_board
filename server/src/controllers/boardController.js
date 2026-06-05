@@ -136,3 +136,26 @@ exports.getFullBoard = asyncHandler(async (req, res) => {
     },
   });
 });
+
+exports.deleteBoard = asyncHandler(async (req, res) => {
+  const { boardId } = req.params;
+
+  if (req.userRole !== "owner") {
+    const err = new Error("Только владелец может удалить доску");
+    err.status = 403;
+    throw err;
+  }
+
+  const result = await pool.query(
+    `DELETE FROM boards WHERE id = $1 RETURNING id`,
+    [boardId],
+  );
+
+  if (!result.rows.length) {
+    const err = new Error("Board not found");
+    err.status = 404;
+    throw err;
+  }
+
+  res.json({ success: true, data: { id: boardId } });
+});
