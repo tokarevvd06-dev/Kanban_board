@@ -1,53 +1,262 @@
 # Kanban Board
 
-## База данных (локальный PostgreSQL + pgAdmin)
+Веб-приложение для управления проектами по методологии Kanban. Позволяет создавать доски, колонки, задачи, комментарии и управлять доступом пользователей.
 
-### 1. Создайте базу в pgAdmin
+## Возможности
 
-1. Откройте pgAdmin и подключитесь к локальному серверу PostgreSQL.
-2. ПКМ на **Databases** → **Create** → **Database…**
-3. Имя: `kanban` → **Save**.
+- Регистрация и авторизация пользователей
+- JWT-аутентификация
+- Создание и удаление досок
+- Просмотр списка досок пользователя
+- Создание и удаление колонок
+- Создание, редактирование и удаление задач
+- Добавление комментариев к задачам
+- Управление участниками доски
+- REST API на Node.js + Express
+- База данных PostgreSQL
+- Клиентская часть на React
 
-### 2. Примените схему
+---
 
-1. ПКМ на базе `kanban` → **Query Tool**.
-2. Откройте файл `init/01_init.sql`, вставьте содержимое в редактор.
-3. Нажмите **Execute** (F5).
+## Стек технологий
 
-### 3. Подключение backend
+### Frontend
 
-```powershell
-copy server\.env.example server\.env
+- React
+- React Router
+- Axios
+- CSS Modules
+
+### Backend
+
+- Node.js
+- Express.js
+- JWT
+- bcrypt
+
+### Database
+
+- PostgreSQL
+
+---
+
+# Установка проекта
+
+## 1. Клонирование репозитория
+
+```bash
+git clone https://github.com/tokarevvd06-dev/Kanban_board.git
+cd Kanban_board
 ```
 
-Отредактируйте `server/.env` — укажите свой пароль PostgreSQL:
+---
 
+## 2. Настройка PostgreSQL
+
+Установить PostgreSQL и создать новую базу данных.
+
+Пример:
+
+```sql
+CREATE DATABASE kanban_board;
 ```
-DATABASE_URL=postgresql://postgres:ВАШ_ПАРОЛЬ@localhost:5432/kanban
+
+Подключиться к созданной БД и выполнить SQL-скрипт создания таблиц.
+
+Например:
+
+```bash
+psql -U postgres -d kanban_board -f database.sql
 ```
 
-### 4. Запуск сервера
+или выполнить SQL-код вручную через pgAdmin.
 
-```powershell
-cd server
+---
+
+## 3. Настройка Backend
+
+Перейти в папку сервера:
+
+```bash
+cd backend
+```
+
+Установить зависимости:
+
+```bash
 npm install
+```
+
+Создать файл `.env`.
+
+Пример содержимого:
+
+```env
+PORT=5000
+DATABASE_URL=postgresql://postgres:ЛИЧНЫЙ_ПАРОЛЬ_ОТ_PGADMIN@localhost:5432/kanban_board
+JWT_SECRET=supersecretkey
+```
+
+Запуск сервера:
+
+```bash
 npm run dev
 ```
 
-API: http://localhost:5000
+После запуска сервер будет доступен по адресу:
+
+```text
+http://localhost:5000
+```
 
 ---
 
-### Параметры подключения в pgAdmin
+## 4. Настройка Frontend
 
-| Параметр | Значение |
-|----------|----------|
-| Host     | `localhost` |
-| Port     | `5432` |
-| Database | `kanban` |
-| User     | `postgres` |
-| Password | ваш пароль при установке PostgreSQL |
+Открыть новый терминал.
+
+Перейти в папку клиента:
+
+```bash
+cd frontend
+```
+
+Установить зависимости:
+
+```bash
+npm install
+```
+
+Запуск клиента:
+
+```bash
+npm run dev
+```
+
+После запуска приложение будет доступно по адресу:
+
+```text
+http://localhost:3000
+```
 
 ---
 
-Папка `data/` в корне проекта — это старые данные от Docker. Её можно удалить, если Docker больше не используется.
+# API
+
+## Авторизация
+
+### Регистрация
+
+```http
+POST /api/auth/register
+```
+
+### Вход
+
+```http
+POST /api/auth/login
+```
+
+---
+
+## Доски
+
+### Получить все доски пользователя
+
+```http
+GET /api/boards
+```
+
+### Создать доску
+
+```http
+POST /api/boards
+```
+
+### Удалить доску
+
+```http
+DELETE /api/boards/:id
+```
+
+---
+
+## Колонки
+
+### Получить колонки доски
+
+```http
+GET /api/boards/:boardId/columns
+```
+
+### Создать колонку
+
+```http
+POST /api/columns
+```
+
+### Удалить колонку
+
+```http
+DELETE /api/columns/:id
+```
+
+---
+
+## Задачи
+
+### Получить задачи колонки
+
+```http
+GET /api/columns/:columnId/tasks
+```
+
+### Создать задачу
+
+```http
+POST /api/tasks
+```
+
+### Обновить задачу
+
+```http
+PUT /api/tasks/:id
+```
+
+### Удалить задачу
+
+```http
+DELETE /api/tasks/:id
+```
+
+---
+
+## Комментарии
+
+### Получить комментарии задачи
+
+```http
+GET /api/tasks/:taskId/comments
+```
+
+### Создать комментарий
+
+```http
+POST /api/comments
+```
+
+### Удалить комментарий
+
+```http
+DELETE /api/comments/:id
+```
+
+---
+
+# Безопасность
+
+В проекте реализованы:
+
+- JWT-аутентификация
+- Хеширование паролей через bcrypt
+- Проверка прав доступа пользователя

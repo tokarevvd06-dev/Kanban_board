@@ -6,5 +6,4 @@ dump.ps1
 backend
 .vscode
 data/
-backend_dump.txt
-frontend_dump.txt
+.env
