@@ -1,21 +1,49 @@
+@use '../../styles/variables' as v;
+
 .card {
   padding: 1.25rem;
-  border: 1px solid #262626;
+  border: 1px solid v.$border;
   border-radius: 0.75rem;
   cursor: pointer;
-  background: #616154;
+  background: v.$accent;
   transition: background-color 0.2s ease;
 
   &:hover {
-    background: #242121;
+    background: v.$hover;
   }
 }
 
-.title {
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin-bottom: 0.75rem;
-  color: #fff;
+}
+
+.title {
+  margin: 0;
+  color: v.$text-h;
   font-size: 1.125rem;
   font-weight: 600;
+}
+
+.deleteBtn {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid v.$border;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: v.$text;
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    color: v.$error;
+    border-color: v.$error;
+  }
 }
 
 .tags {
@@ -27,7 +55,12 @@
 .tag {
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
-  color: #a3a3a3;
+  color: v.$text;
   font-size: 0.75rem;
-  background: #262626;
+  background: v.$hover;
+}
+
+.noColumns {
+  color: v.$text;
+  font-size: 0.75rem;
 }

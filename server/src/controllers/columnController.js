@@ -85,3 +85,43 @@ exports.reorderColumns = async (req, res) => {
     client.release();
   }
 };
+
+exports.deleteColumn = asyncHandler(async (req, res) => {
+  const { columnId } = req.params;
+
+  const columnRes = await pool.query(
+    `SELECT board_id, position FROM columns WHERE id = $1`,
+    [columnId],
+  );
+
+  if (!columnRes.rows.length) {
+    const err = new Error('Column not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const { board_id: boardId, position } = columnRes.rows[0];
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    await client.query(`DELETE FROM columns WHERE id = $1`, [columnId]);
+
+    await client.query(
+      `UPDATE columns
+       SET position = position - 1
+       WHERE board_id = $1 AND position > $2`,
+      [boardId, position],
+    );
+
+    await client.query('COMMIT');
+    res.json({ success: true, data: { id: columnId } });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+});

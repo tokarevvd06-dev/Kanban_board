@@ -1,19 +1,31 @@
+import { CollisionPriority } from '@dnd-kit/abstract';
 import { useSortable } from '@dnd-kit/react/sortable';
+import { dndTaskGroup, dndTaskId } from '../utils/dnd';
 import styles from './styles/TaskCard.module.scss';
 
-export default function TaskCard({ task, index, columnId }) {
+export default function TaskCard({
+  task,
+  index,
+  columnId,
+  disabled = false,
+  onOpen,
+}) {
   const { ref, isDragging } = useSortable({
-    id: String(task.id),
+    id: dndTaskId(task.id),
     index,
-    group: String(columnId),
+    group: dndTaskGroup(columnId),
     type: 'task',
-    data: { type: 'task', columnId },
+    accept: 'task',
+    disabled,
+    collisionPriority: CollisionPriority.Low,
+    data: { type: 'task', columnId, taskId: task.id },
   });
 
   return (
     <div
       ref={ref}
       className={`${styles.card} ${isDragging ? styles.dragging : ''}`}
+      onClick={() => onOpen?.()}
     >
       <p className={styles.title}>{task.title}</p>
       {task.description && (

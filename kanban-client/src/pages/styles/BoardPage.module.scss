@@ -11,8 +11,15 @@
   margin-bottom: 2rem;
 }
 
+.backContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .backLink {
-  display: inline-block;
+  display: flex;
+  align-items: center;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   color: v.$text;
@@ -40,6 +47,15 @@
 }
 
 .error {
-  color: #f87171;
+  color: v.$error;
   margin-bottom: 1rem;
+}
+
+.arrowLeft {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  object-position: center;
+  object-fit: cover;
+  object-position: center;
 }
