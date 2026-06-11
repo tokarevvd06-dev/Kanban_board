@@ -6,7 +6,7 @@ import { createTask, moveTask } from '../api/tasks';
 import TaskModal from '../components/TaskModal';
 import Columns from '../components/Columns';
 import styles from './styles/BoardPage.module.scss';
-import arrowLeft from '../../public/arrow-left.png';
+import arrowLeft from '../icons/arrow-left.png';
 
 export default function BoardPage() {
   const { id } = useParams();
@@ -76,7 +76,9 @@ export default function BoardPage() {
 
     try {
       await deleteColumn(columnId);
-      setColumns((prev) => prev.filter((col) => String(col.id) !== String(columnId)));
+      setColumns((prev) =>
+        prev.filter((col) => String(col.id) !== String(columnId))
+      );
     } catch (err) {
       console.error(err.response?.data?.message ?? err.message);
     }
@@ -89,11 +91,11 @@ export default function BoardPage() {
           ? {
               ...col,
               tasks: (col.tasks ?? []).filter(
-                (t) => String(t.id) !== String(taskId),
+                (t) => String(t.id) !== String(taskId)
               ),
             }
-          : col,
-      ),
+          : col
+      )
     );
   };
 

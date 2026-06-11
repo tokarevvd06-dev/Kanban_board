@@ -7,45 +7,51 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // REGISTER
 const register = asyncHandler(async (req, res) => {
-  const { email, password, name } = req.body;
+  try {
+    const { email, password, name } = req.body;
 
-  if (!email || !password || !name) {
-    return res.status(400).json({ message: "All fields required" });
-  }
+    if (!email || !password || !name) {
+      return res.status(400).json({ message: "All fields required" });
+    }
 
-  // проверка существующего пользователя
-  const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [
-    email,
-  ]);
+    // проверка существующего пользователя
+    const userExists = await pool.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email],
+    );
 
-  if (userExists.rows.length > 0) {
-    return res.status(400).json({ message: "User already exists" });
-  }
+    if (userExists.rows.length > 0) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
-  // хеш пароля
-  const hashedPassword = await bcrypt.hash(password, 10);
+    // хеш пароля
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  // создание пользователя
-  const newUser = await pool.query(
-    `INSERT INTO users (email, password_hash, name)
+    // создание пользователя
+    const newUser = await pool.query(
+      `INSERT INTO users (email, password_hash, name)
      VALUES ($1, $2, $3)
      RETURNING id, email, name`,
-    [email, hashedPassword, name],
-  );
+      [email, hashedPassword, name],
+    );
 
-  const token = jwt.sign(
-    { id: newUser.rows[0].id, email: newUser.rows[0].email },
-    JWT_SECRET,
-    { expiresIn: "7d" },
-  );
+    const token = jwt.sign(
+      { id: newUser.rows[0].id, email: newUser.rows[0].email },
+      JWT_SECRET,
+      { expiresIn: "7d" },
+    );
 
-  res.status(201).json({
-    success: true,
-    data: {
-      token,
-      user: newUser.rows[0],
-    },
-  });
+    res.status(201).json({
+      success: true,
+      data: {
+        token,
+        user: newUser.rows[0],
+      },
+    });
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // LOGIN

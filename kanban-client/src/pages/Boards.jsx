@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import { deleteBoard } from '../api/boards';
 import { useState, useEffect } from 'react';
-import BoardCards from '../components/boardCards.jsx';
+import BoardCards from '../components/BoardCards.jsx';
 import { useAuthStore } from '../store/authStore';
 import styles from './styles/Boards.module.scss';
 export default function Boards() {

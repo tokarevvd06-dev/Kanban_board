@@ -1,11 +1,5 @@
--- ================================
--- ENABLE UUID EXTENSION
--- ================================
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ================================
--- USERS
--- ================================
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -13,30 +7,18 @@ CREATE TABLE users (
     password TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- ================================
--- BOARDS
--- ================================
 CREATE TABLE boards (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL,
     owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- ================================
--- BOARD MEMBERS (ACCESS CONTROL)
--- ================================
 CREATE TABLE board_members (
     board_id UUID REFERENCES boards(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     role TEXT NOT NULL CHECK (role IN ('owner', 'editor', 'viewer')),
     PRIMARY KEY (board_id, user_id)
 );
-
--- ================================
--- COLUMNS
--- ================================
 CREATE TABLE columns (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL,
@@ -44,10 +26,6 @@ CREATE TABLE columns (
     position INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- ================================
--- TASKS
--- ================================
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL,
@@ -56,10 +34,6 @@ CREATE TABLE tasks (
     position INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- ================================
--- COMMENTS
--- ================================
 CREATE TABLE comments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
@@ -68,9 +42,6 @@ CREATE TABLE comments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ================================
--- INDEXES (PERFORMANCE)
--- ================================
 CREATE INDEX idx_board_members_user ON board_members(user_id);
 CREATE INDEX idx_columns_board ON columns(board_id);
 CREATE INDEX idx_tasks_column ON tasks(column_id);
