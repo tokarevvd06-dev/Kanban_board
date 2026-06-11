@@ -11,7 +11,6 @@
 - Создание и удаление колонок
 - Создание, редактирование и удаление задач
 - Добавление комментариев к задачам
-- Управление участниками доски
 - REST API на Node.js + Express
 - База данных PostgreSQL
 - Клиентская часть на React
@@ -61,15 +60,9 @@ cd Kanban_board
 CREATE DATABASE kanban_board;
 ```
 
-Подключиться к созданной БД и выполнить SQL-скрипт создания таблиц.
+Название базы данных будет использоваться в сервере для подключения!
 
-Например:
-
-```bash
-psql -U postgres -d kanban_board -f database.sql
-```
-
-или выполнить SQL-код вручную через pgAdmin.
+Перейти в Query Tool созданной БД и выполнить SQL-код из файла SQL.txt в папке DB_init вручную через pgAdmin.
 
 ---
 
@@ -78,7 +71,7 @@ psql -U postgres -d kanban_board -f database.sql
 Перейти в папку сервера:
 
 ```bash
-cd backend
+cd server
 ```
 
 Установить зависимости:
@@ -96,6 +89,8 @@ PORT=5000
 DATABASE_URL=postgresql://postgres:ЛИЧНЫЙ_ПАРОЛЬ_ОТ_PGADMIN@localhost:5432/kanban_board
 JWT_SECRET=supersecretkey
 ```
+
+Название БД такое же как в pgAdmin!
 
 Запуск сервера:
 
@@ -118,7 +113,7 @@ http://localhost:5000
 Перейти в папку клиента:
 
 ```bash
-cd frontend
+cd kanban-client
 ```
 
 Установить зависимости:
